@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        .sidenav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #fff;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 10px;
+            margin-top: 65px;
+            border-right: thin inset;
+        }
+
+        .navbar {
+            height: 64px;
+        }
+
+        .nonnav{
+            transition: 0.5s;
+        }
+
+        .sidenav a {
+            padding: 8px 8px 8px 15px;
+            text-decoration: none;
+            font-size: 16px;
+            color: #00274c;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .sidenav > a > i {
+            padding-right: 30px;
+        }
+
+        .indentnav {
+            padding: 70px 8px 70px 32px;
+        }
+
+
+        .sidenav a:hover {
+            color: #f1f1f1;
+            background-color: #6d6c6c;
+        }
+
+        .sidenav .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+
+        /*SVG Used*/
+        .whiteM{fill:#fff;stroke:#fff;}
+        .maizeM{fill:#f5c400;}
+        .logo{display:block;width:160px;}
+        .small{font-size:80%;}
+        .small{font-weight:400;}
+        svg{margin:5px;}
+        svg path{stroke:#000;stroke-width:0px;}
+
+
+        /* Move Navbar text down a bit since Mcity logo is so big. */
+        .navbar-text{margin:0px;}
+
+        .MichiganBlue-color {
+            background-color: #00274c!important;
+        }
+
+        .MichiganBlue-color-dark {
+            background-color: #00274c!important;
+        }
+
+        .MichiganMaize-color {
+            background-color: #f5c400!important;
+        }
+
+        .MichiganMaize-color-dark {
+            background-color: #f5c400!important;
+        }
+
+        body {
+            background-color: #f2f2f2 !important;
+        }
+
+        .page-footer {
+            height: 20px;
+        }
+
+        .content {
+            min-height: calc(100vh - 21px);
+        }
+
+        @media screen and (max-height: 450px) {
+        .sidenav {padding-top: 0px;}
+        .sidenav a {font-size: 18px;}
+        }
+
+        h3 {
+            font-size: 1.4rem !important;
+            font-weight: 300 !important;
+        }
+
+        h2 {
+            font-weight: 350 !important;
+        }  
+
+        .pushMessage {
+            width: 400px;
+            height: 2500px;
+            overflow: scroll;
+        } 
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            // An application can open a connection on multiple namespaces, and
+            // Socket.IO will multiplex all those connections on a single
+            // physical channel. If you don't care about multiple channels, you
+            // can set the namespace to an empty string.
+            namespace = '/octane';
+            socketConnected = false;
+    
+            // Connect to the Socket.IO server.
+            // The connection URL has the following format:
+            //     http[s]://<domain>:<port>[/<namespace>]
+            var socket = null //io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+            
+            // Event handler for new connections.
+            // The callback function is invoked when a connection with the
+            // server is established.
+
+            // Handlers for the different forms in the page.
+            // These accept data from the user and send it to the server in a
+            // variety of ways
+            $('form#connect').submit(function(event) {
+                $('#log').append('<br>' + $('<div/>').text('Connecting...').html());
+                token = $('#connect_data').val()
+                if (socketConnected) {
+                    $('#log').append('<br>' + $('<div/>').text('Already connected').html());
+                    return false;
+                }
+
+                socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace, {
+                    //Un-comment this line to pass token via Query parameters instead of in an auth event.
+                    //query: { 'X-API-KEY': token},
+                    forceNew: true
+                });
+                socket.on('connect', function() {
+                    socket.emit('auth', {'x-api-key': $('#connect_data').val()});
+                    socketConnected = true;
+                });
+                socket.on('disconnect', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('*Disconnected*').html());
+                    socketConnected = false;
+                });
+                socket.on('disconnect_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('*Disconnect* : ' + msg.message).html());
+                });
+                socket.on('join', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('*Join Channel* : ' + msg.join).html());
+                });
+                                
+                socket.on('leave', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('*Leave Channel* : ' + msg.leave).html());
+                });
+
+                socket.on('channels', function(msg) {
+                    channels = msg.channels;
+                    $('#channelsJoin').empty()
+                    $('#channelsLeave').empty()
+                    for (i = 0; i < channels.length; i++) { 
+                        $('#log').append('<br>' + $('<div/>').text('Channel - Name: ' + channels[i].name + ' Subscribed: ' + channels[i].subscribed).html());
+                        $('#channels').append('<option>'+channels[i].name+'</option>');
+                    }
+                });
+
+                socket.on('user_message', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Users : ' + msg.message).html());
+                });
+
+                socket.on('facility_message', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Facility : ' + msg).html());
+                });
+
+                socket.on('facility_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Facility [U] : ' + msg).html());
+                });
+
+                socket.on('facility_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Facility [R] : ' + msg).html());
+                });
+
+                socket.on('intersection_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Intersection [U] : ' + msg).html());
+                });
+
+                socket.on('intersection_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Intersection [R] : ' + msg).html());
+                });
+                
+                socket.on('signal_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Signal [U] : ' + msg).html());
+                });
+
+                socket.on('signal_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Signal [R] : ' + msg).html());
+                });
+
+                socket.on('railcrossing_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Rail [U] : ' + msg).html());
+                });
+
+                socket.on('railcrossing_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Rail [R] : ' + msg).html());
+                });
+
+                socket.on('crosswalk_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Crosswalk [U] : ' + msg).html());
+                });
+
+                socket.on('crosswalk_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Crosswalk [R] : ' + msg).html());
+                });
+
+                socket.on('gate_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Gate [U] : ' + msg).html());
+                });
+
+                socket.on('gate_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Gate [R] : ' + msg).html());
+                });
+
+                socket.on('v2x_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('V2X [R] : ' + msg).html());
+                });
+
+                socket.on('v2x_message', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('V2X [M] : ' + msg).html());
+                });
+
+                socket.on('v2x_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('V2X [U] : ' + msg).html());
+                });
+
+                return false;
+            });
+            $('form#join').submit(function(event) {
+                socket.emit('join', {channel: $("#channels").val()});
+                return false;
+            });
+            $('form#leave').submit(function(event) {
+                socket.emit('leave', {channel: $("#channels").val()});
+                return false;
+            });
+            $('form#send_channel').submit(function(event) {
+                socket.emit('user_message', {message: $('#channel_data').val()});
+                return false;
+            });
+            $('form#disconnect').submit(function(event) {
+                $('#log').append('<br>' + $('<div/>').text('Disconnecting').html());
+                if (socketConnected) {
+                    socket.emit('disconnect_request');
+                    socketConnected = false;
+                    socket = null;
+                }
+                return false;
+            });
+            $('form#channel').submit(function(event) {
+                if (socketConnected) {
+                    socket.emit('channels');
+                }
+                return false;
+            });
+            $('form#clear').submit(function(event) {
+                $('#log').empty();
+                return false;
+            });
+        });
+    </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mcity OCTANE Examples</title>
+</head>
+<body>
+    <div class="content">
+        <header>
+            <nav class="navbar navbar-dark MichiganBlue-color">
+                <div class="d-flex float-left justify-content-start">
+                    <a class="navbar-brand logo" href="/">
+                            <svg id="422b3105-969d-41b5-acfe-f4aee29b8340" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 651.91 178.28"><defs></defs>
+                                <title>Mcity-Logo</title> 
+                                <path d="M415,69c.44-18.07-8.49-22.87-15.26-22.87-13.71,0-23.09,6.54-23.09,36.59,0,35.72,4.58,48.58,23.09,48.58,4.14,0,16.56-4.36,15.91-24.19h18.73c.65,30.93-22.43,38.78-34.64,38.78-23.29,0-41.81-7-41.81-55.53,0-32.25,3.7-58.81,41.81-58.81,22,0,34.85,12.84,33.77,37.46H415" class="whiteM"></path>
+                                <path d="M455.12.09h20V19.26h-20Zm1.08,33.65h17.86v110H456.2Z" class="whiteM"></path> 
+                                <rect x="299.42" width="2.58" height="178.28" class="whiteM"></rect> 
+                                <polyline points="124.67 147.17 73.6 77.39 73.6 128.15 93.91 128.15 93.91 178.28 0 178.28 0 128.15 19.03 128.15 19.03 50.11 0 50.11 0 0 73.77 0 124.67 70.28 175.56 0 249.3 0 249.3 50.11 230.26 50.11 230.26 128.15 249.3 128.15 249.3 178.28 155.41 178.28 155.41 128.15 175.7 128.15 175.7 77.39 124.67 147.17" class="maizeM"></polyline> 
+                                <polygon points="585.75 177.87 604.49 177.87 651.91 33.74 632.53 33.74 606.16 123.26 605.74 123.26 579.38 33.74 558.68 33.74 595.93 143.74 585.75 177.87" class="whiteM"></polygon> 
+                                <path d="M507.64,33.74V8.3L525.5.24v33.5h17.2l4.6,13.51H525.5v67.3c0,7,0,15.9,16.34,15.9,1.31,0,4.13-.44,8.06-.86l4.46,13.23c-5.87.44-11.79,2.22-22.1,2.22-17,0-24.62-7-24.62-19.6V47.25H492.8V33.74h14.84" class="whiteM"></path>
+                            </svg>
+                    </a>
+                    <span class="navbar-text white-text my-auto">OCTANE Socket.IO Example</span>
+                </div>
+            </nav>
+        </header>
+        <div id="mainNonNav" class="nonnav">
+            <div class='container'>
+                <h1>Mcity OCTANE REST API</h1>
+                <p>The API provides a RESTful interface for enumerating, creating, and updating resources. 
+                   The API endpoints, responses, definitions of schemas, and possible payloads are documented at the following link.
+                   https://mcity.um.city/apidocs. The interface at that URL can also be used similar to this page, but enables ad-hoc requests
+                   to the API without the need to write the request harness. In an effort to consolidate documentation, the apidocs website
+                   includes Websocket channels and events documented as REST endpoints, these are not accessible via the REST interface though
+                   and should be ignored when working with the rest of the endpoints.
+
+                   End point method types:
+                   Want to see all available resources or a single resources current state? GET methods.
+                   Make a request to update state of a resource? PATCH methods.
+
+                Follow the steps below to test how to utilize the API through jQuery or other web javascript frameworks.
+                Viewing the source of this page will reveal the code running behind the examples shown here.
+
+                <table cellpadding="5px" cellspacing="20px" style="width: 100%; xwhite-space: nowrap; xtable-layout: fixed;">
+                    <tr>
+                        <td valign="top" style="width: 70%">
+                                <h2>Authentication</h2>
+                                Authentication is required in each call to the REST api by a X-API-KEY header with a valid token as the value.
+                                Refer to API documentation for the error value and payload you would receive if you submit an invalid token.
+                                
+                                Provide your api key in the box below to have it be submitted with all future requests.
+                                <input type="text" name="connect_data" id="connect_data" placeholder="X-API-KEY">
+
+                                Test your API key by clicking the button below.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="submit" value="Test API key">
+                                </form>
+                
+                                <h2>Endpoints</h2>
+                                Endpoints are grouped into categories within the API. 
+                                The following examples will work with the Intersections endpoints and the railcrossing end points. 
+                                
+                                Many other endpoint groups exist and working with them will be similar to the samples shown here.
+                                                  
+                                Let's start by enum
+                
+                                <br>Query Parameter: <b>X-API-KEY=<i>API_KEY_HERE</i></b>
+                                <br>API Key:<input type="text" name="connect_data" id="connect_data" placeholder="X-API-KEY">
+                
+                
+                                <h2>List Rail Crossings</h2>
+                                Let's list all the rail crossings within the facility. To do this we'll query the /api/railcrossings 
+                                endpoint without a payload. Notice the "s" at the end of the endpoint name. That is an indication that the 
+                                endpoint is going to return a list of items. According to the documentation for this endpoint a request should
+                                include a list of rail crossing schemas. We can refer to the bottom of the API docs website to view 
+                                the contents of a rail crossing schema and definitions for what each field means and possible example values for each.
+                                    
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                <h2>Query Rail Crossing</h2>
+                                The list of rail crossings includes all rail crossings even those not controllable by the API due to lack of instrumentation. 
+                                For our example we'll focus on a single rail crossing with a controllable gate. Let's query the information about that single 
+                                gate (id: 1) by making a GET request to the /api/railcrossing/[id] endpoint and including the identifier for the gate at the end 
+                                of the request URL.
+         
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+            
+                                <h2>Trigger Rail Crossing</h2>
+                                Now that we can successfully ask about the state of the railcrossing, we can begin to manipulate it's state.
+                                The PATCH http method for the /api/railcrossing/[id] endpoint supports patching of the state of the crossing.
+                                The manualCall attribute within the state indicates that a manual request for operation has been made. This is equivalent
+                                to pushing a physical button that runs our rail crossing cycle set in the gate controller. Let's PATCH the state
+                                with the manualCall attribute set to true.
+                                
+                                Press the button below to make a request to enable a cycle of the rail crossing.
+
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                When this request is being serviced, running the above query on the single or list of rail crossings will show this crossings state as activated.
+                        
+
+                                <h2>List Intersections</h2>
+                                Let's list all the intersections within the facility. To do this we'll query the /api/intersections 
+                                endpoint without a payload. Notice the "s" at the end of the endpoint name. That is an indication that the 
+                                endpoint is going to return a list of items. According to the documentation for this endpoint a request should
+                                include a list of intersection schemas. We can refer to the bottom of the API docs website to view 
+                                the contents of a intersection schema and definitions for what each field means and possible example values for each.
+                                    
+                                <form id="send_channel" method="POST" action='#'>
+                                    <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                    <input type="submit" value="Send to Users">
+                                </form>
+                
+                                <h2>Query Intersection</h2>
+                                From the list of intersections, we'll focus on a single one at the intersection of State/Main.  Let's query the information about that single 
+                                Intersection (id: 4) by making a GET request to the /api/intersection/[id] endpoint and including the identifier for the intersection at the end 
+                                of the request URL.
+         
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+            
+                                <h2>Intersections Control</h2>
+                                Intersections have many possible states. In the case of Mcity's implementation, all are ultimate executed by a real traffic controller.
+                                The prohibits invalid states from being services, and requires us to work within the bounds of what is possible at a real world intersection.
+                                States that are invalid, such as GREEN straight through in all 4 directions are restricted by the controller 
+                                as they would be at a real intersection.
+
+                                Intersections are by far the most complex item controlled by the API. An intersection works by controlling the flow of traffic by which lights are GREEN.
+                                Understanding how they work requires understanding bits of NTCIP traffic control standard which we've attempted to document below.
+
+                                Refer to the diagram in intersection-phases.png. 
+                                Which lights are green are determined by their phase number. Phase numbers generally match the diagram shown above.
+                                Groupings of Phases that are valid to be activated at the same time are considered stages. Within OCTANE we use controlgroup numbers
+                                as shorthand for these stages. 
+
+                                To provide information about active or desired active stages, these controlgroup numbers are bit strings representing all 8 phases
+                                with phase 8 in the most significant bit, and phase 1 in the least significant bit. Example: 10000011 (Phase 8, 2, and 1 active)
+
+                                Back to the State and Main intersection, we can see that the States or control groupings are listed as follows:
+
+                                Let's start by resetting the intersection to it's base state. Submit a patch request with state->reset: true to intersection 4.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                You can submit a reset with any other intersection request, and the reset will always occur before the rest of the state change request
+                                is completed. 
+
+                                <h2>Intersection Flash</h2>
+                                Intersection flash is controlled by a system pre-programmed flash at the controller. The API doesn't allow for configuration of that flash sequence,
+                                but it does allow you to enter and exit the FLASH state. Just like at a real intersection, the intersection will not immediately change from GREEN
+                                to flashing red, but instead transition by first stopping traffic in all directions and then entering or exiting the FLASH state.
+
+                                Let's set the intersection to flash.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                Change the intersection back to normal. This can be achieved through reset of the intersection, or setting FLASH to false.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>                      
+
+                                <h2>Intersection Hold</h2>
+                                As stated before a traffic controller works by giving control of which Phases are GREEN. If we wish to hold a signal GREEN, we can issue a HOLD
+                                for a GREEN on a single phase or multiple phases (state). When the controller reaches the requested held, it will be held GREEN until the hold is cleared.
+                            
+                                Let's hold a single phase GREEN. We'll request a reset be done first. When the intersection eventually gets to this PHASE being green, it will be held
+                                until cleared. 
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                After submitting the hold, query the state of this intersection until you see it held GREEN.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+                                
+                                <h2>Intersection Omit</h2>
+                                Intersection phases can be omitted from the cycle in which they would turn GREEN. This causes that signal to be skipped from ever turning GREEN.
+                                Omits only work at the state level. If an intersection has a State with a straight
+                                through combined with a left turn arrow, it's not possible to omit just the turn arrow from that State. 
+                                The omit for the turn arrow would be ignored and the State still serviced.
+
+                                Omit a Phase GREEN.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                After submitting the hold, query the state of the Intersection and view the hold placed.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                <h2>Intersection Force Off</h2>
+                                Intersection phases can be forced off. Force off again applies to control of GREEN only. Forcing off a GREEN phase will cause it to transition 
+                                to RED. Remaining GREEN time for the light will be set to the minimum possible and then transition to YELLOW and RED. 
+                                Forcing off a presently RED phase will not have any effect until it becomes GREEN.
+
+                                Force off Green
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                Query after Force off.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+                                
+                                
+                                <h2>Intersection N/S Green</h2>
+                                Utilizing the controls learned above, we can combine them to quickly transition a desired State to GREEN. We'll first reset the light.
+                                Next we'll request all undesired phases be omitted and forced off. This will cause the next transition to be done to the phases we 
+                                wish to be GREEN. Finally we'll request the desired phases be held GREEN. This is all possible in one request as none of these actions
+                                will conflict and we're requesting control of a valid State. The state will remain until cleared.
+                            
+                                Request North/South RED (East/West GREEN)
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                <h2>Intersection N/S Red</h2>
+                                Utilizing the controls learned above, we can combine them to quickly transition a desired State to RED. The traffic controller doesn't
+                                allow a direct request for a State to be RED, but by requesting the desired Phases Off and any other State to be GREEN, we can achieve 
+                                RED control. We'll first reset the light. Next we'll request all desired phases be omitted and forced off. This will cause the next transition 
+                                to any other PHASE to be green and held. This is all possible in one request as none of these actions
+                                will conflict and we're requesting control of a valid State. The state will remain until cleared.
+                            
+                                Request North/South GREEN
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                <h2>Intersection Paused</h2>    
+                                At each intersection the traffic control tracks time between transition to next Phase and how long is left in the current step of a Phase.
+                                We can also hold the current state of an intersection by requesting that this counter be paused and the intersection be held in the exact 
+                                State it is presently in.
+
+                                Request Intersection Pause
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+                                
+                                <h2>Intersection N/S Yellow</h2>
+                                Utilizing the controls learned above, we can combine them to quickly transition a desired State to YELLOW. The intersection doesn't allow
+                                for any direct control over YELLOW signal, but by making the desired signal GREEN, forcing it off, and then pausing time when it is YELLOW,
+                                we can achieve a held YELLOW held signal. This is done by making multiple requests and watching for the state in between by issuing a query 
+                                and pausing while green. The OCTANE API can do these three steps for you by using the Intersection abstraction endpoints on /signal. A patch 
+                                to SIGNAL directly with YELLOW as the desired state will run the exact command sequence below. 
+
+                                Request North/South GREEN
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                Query and wait until desired lights are GREEN
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                Request the North/South GREEN force off and then Pause when it's YELLOW.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                <h2>Intersection Backup Time</h2>                                                      
+                                The intersections support a function of NTCIP named backup time. The backup time is the time between when the last control command is submitted
+                                until when the intersection returns to it's default control state, similar to after a reset state. By default all Mcity
+                                intersections have backup time set to 0 or disabled. This means that control requests are held until manually cleared.
+
+                                We can use NTCIP backup time through the REST API implement functions like priority GREEN lights. By setting the backup time to a low value of 5 seconds,
+                                as long as a device is requesting a hold request at least every 5 seconds, the light would be held in the current state of GREEN. If no request
+                                is made within 2 seconds, then the traffic controller will clear the request and return to normal operation.
+
+                                Request a NTCIP backup time:
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                Make a request to hold current state of intersection.
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                Get the current state, then wait 5 seconds and request the state again. Notice how the hold has cleared?
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>
+
+                                Let's reset the light to clear the backup time setting:
+                                <form id="send_channel" method="POST" action='#'>
+                                        <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                        <input type="submit" value="Send to Users">
+                                </form>                                
+
+                        </td>
+                        <td valign="top" style="width: 30%">
+                            <h2>Log:</h2>
+                            <div id="log" class="pushMessage"></div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div> <!--Content-->
+    <!--Footer-->
+    <footer class="page-footer accent-4 center-on-small-only nonnav">
+        <!--Copyright-->
+        <div class="footer-copyright black">
+                <div class="container-fluid">
+                    © 2019 <a href="http://regents.umich.edu/" target="_blank">The Regents of the University of Michigan</a>
+                </div>
+        </div>
+            <!--/.Copyright-->
+    </footer>
+</body>
+</html>

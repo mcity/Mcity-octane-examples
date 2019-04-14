@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        .sidenav {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #fff;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 10px;
+            margin-top: 65px;
+            border-right: thin inset;
+        }
+
+        .navbar {
+            height: 64px;
+        }
+
+        .nonnav{
+            transition: 0.5s;
+        }
+
+        .sidenav a {
+            padding: 8px 8px 8px 15px;
+            text-decoration: none;
+            font-size: 16px;
+            color: #00274c;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .sidenav > a > i {
+            padding-right: 30px;
+        }
+
+        .indentnav {
+            padding: 70px 8px 70px 32px;
+        }
+
+
+        .sidenav a:hover {
+            color: #f1f1f1;
+            background-color: #6d6c6c;
+        }
+
+        .sidenav .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+
+        /*SVG Used*/
+        .whiteM{fill:#fff;stroke:#fff;}
+        .maizeM{fill:#f5c400;}
+        .logo{display:block;width:160px;}
+        .small{font-size:80%;}
+        .small{font-weight:400;}
+        svg{margin:5px;}
+        svg path{stroke:#000;stroke-width:0px;}
+
+
+        /* Move Navbar text down a bit since Mcity logo is so big. */
+        .navbar-text{margin:0px;}
+
+        .MichiganBlue-color {
+            background-color: #00274c!important;
+        }
+
+        .MichiganBlue-color-dark {
+            background-color: #00274c!important;
+        }
+
+        .MichiganMaize-color {
+            background-color: #f5c400!important;
+        }
+
+        .MichiganMaize-color-dark {
+            background-color: #f5c400!important;
+        }
+
+        body {
+            background-color: #f2f2f2 !important;
+        }
+
+        .page-footer {
+            height: 20px;
+        }
+
+        .content {
+            min-height: calc(100vh - 21px);
+        }
+
+        @media screen and (max-height: 450px) {
+        .sidenav {padding-top: 0px;}
+        .sidenav a {font-size: 18px;}
+        }
+
+        h3 {
+            font-size: 1.4rem !important;
+            font-weight: 300 !important;
+        }
+
+        h2 {
+            font-weight: 350 !important;
+        }  
+
+        .pushMessage {
+            width: 400px;
+            height: 2500px;
+            overflow: scroll;
+        } 
+    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            // An application can open a connection on multiple namespaces, and
+            // Socket.IO will multiplex all those connections on a single
+            // physical channel. If you don't care about multiple channels, you
+            // can set the namespace to an empty string.
+            namespace = '/octane';
+            socketConnected = false;
+    
+            // Connect to the Socket.IO server.
+            // The connection URL has the following format:
+            //     http[s]://<domain>:<port>[/<namespace>]
+            var socket = null //io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+            
+            // Event handler for new connections.
+            // The callback function is invoked when a connection with the
+            // server is established.
+
+            // Handlers for the different forms in the page.
+            // These accept data from the user and send it to the server in a
+            // variety of ways
+            $('form#connect').submit(function(event) {
+                $('#log').append('<br>' + $('<div/>').text('Connecting...').html());
+                token = $('#connect_data').val()
+                if (socketConnected) {
+                    $('#log').append('<br>' + $('<div/>').text('Already connected').html());
+                    return false;
+                }
+
+                socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace, {
+                    //Un-comment this line to pass token via Query parameters instead of in an auth event.
+                    //query: { 'X-API-KEY': token},
+                    forceNew: true
+                });
+                socket.on('connect', function() {
+                    socket.emit('auth', {'x-api-key': $('#connect_data').val()});
+                    socketConnected = true;
+                });
+                socket.on('disconnect', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('*Disconnected*').html());
+                    socketConnected = false;
+                });
+                socket.on('disconnect_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('*Disconnect* : ' + msg.message).html());
+                });
+                socket.on('join', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('*Join Channel* : ' + msg.join).html());
+                });
+                                
+                socket.on('leave', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('*Leave Channel* : ' + msg.leave).html());
+                });
+
+                socket.on('channels', function(msg) {
+                    channels = msg.channels;
+                    $('#channelsJoin').empty()
+                    $('#channelsLeave').empty()
+                    for (i = 0; i < channels.length; i++) { 
+                        $('#log').append('<br>' + $('<div/>').text('Channel - Name: ' + channels[i].name + ' Subscribed: ' + channels[i].subscribed).html());
+                        $('#channels').append('<option>'+channels[i].name+'</option>');
+                    }
+                });
+
+                socket.on('user_message', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Users : ' + msg.message).html());
+                });
+
+                socket.on('facility_message', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Facility : ' + msg).html());
+                });
+
+                socket.on('facility_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Facility [U] : ' + msg).html());
+                });
+
+                socket.on('facility_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Facility [R] : ' + msg).html());
+                });
+
+                socket.on('intersection_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Intersection [U] : ' + msg).html());
+                });
+
+                socket.on('intersection_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Intersection [R] : ' + msg).html());
+                });
+                
+                socket.on('signal_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Signal [U] : ' + msg).html());
+                });
+
+                socket.on('signal_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Signal [R] : ' + msg).html());
+                });
+
+                socket.on('railcrossing_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Rail [U] : ' + msg).html());
+                });
+
+                socket.on('railcrossing_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Rail [R] : ' + msg).html());
+                });
+
+                socket.on('crosswalk_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Crosswalk [U] : ' + msg).html());
+                });
+
+                socket.on('crosswalk_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Crosswalk [R] : ' + msg).html());
+                });
+
+                socket.on('gate_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Gate [U] : ' + msg).html());
+                });
+
+                socket.on('gate_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('Gate [R] : ' + msg).html());
+                });
+
+                socket.on('v2x_request', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('V2X [R] : ' + msg).html());
+                });
+
+                socket.on('v2x_message', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('V2X [M] : ' + msg).html());
+                });
+
+                socket.on('v2x_update', function(msg) {
+                    $('#log').append('<br>' + $('<div/>').text('V2X [U] : ' + msg).html());
+                });
+
+                return false;
+            });
+            $('form#join').submit(function(event) {
+                socket.emit('join', {channel: $("#channels").val()});
+                return false;
+            });
+            $('form#leave').submit(function(event) {
+                socket.emit('leave', {channel: $("#channels").val()});
+                return false;
+            });
+            $('form#send_channel').submit(function(event) {
+                socket.emit('user_message', {message: $('#channel_data').val()});
+                return false;
+            });
+            $('form#disconnect').submit(function(event) {
+                $('#log').append('<br>' + $('<div/>').text('Disconnecting').html());
+                if (socketConnected) {
+                    socket.emit('disconnect_request');
+                    socketConnected = false;
+                    socket = null;
+                }
+                return false;
+            });
+            $('form#channel').submit(function(event) {
+                if (socketConnected) {
+                    socket.emit('channels');
+                }
+                return false;
+            });
+            $('form#clear').submit(function(event) {
+                $('#log').empty();
+                return false;
+            });
+        });
+    </script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mcity OCTANE Examples</title>
+</head>
+<body>
+    <div class="content">
+        <header>
+            <nav class="navbar navbar-dark MichiganBlue-color">
+                <div class="d-flex float-left justify-content-start">
+                    <a class="navbar-brand logo" href="/">
+                            <svg id="422b3105-969d-41b5-acfe-f4aee29b8340" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 651.91 178.28"><defs></defs>
+                                <title>Mcity-Logo</title> 
+                                <path d="M415,69c.44-18.07-8.49-22.87-15.26-22.87-13.71,0-23.09,6.54-23.09,36.59,0,35.72,4.58,48.58,23.09,48.58,4.14,0,16.56-4.36,15.91-24.19h18.73c.65,30.93-22.43,38.78-34.64,38.78-23.29,0-41.81-7-41.81-55.53,0-32.25,3.7-58.81,41.81-58.81,22,0,34.85,12.84,33.77,37.46H415" class="whiteM"></path>
+                                <path d="M455.12.09h20V19.26h-20Zm1.08,33.65h17.86v110H456.2Z" class="whiteM"></path> 
+                                <rect x="299.42" width="2.58" height="178.28" class="whiteM"></rect> 
+                                <polyline points="124.67 147.17 73.6 77.39 73.6 128.15 93.91 128.15 93.91 178.28 0 178.28 0 128.15 19.03 128.15 19.03 50.11 0 50.11 0 0 73.77 0 124.67 70.28 175.56 0 249.3 0 249.3 50.11 230.26 50.11 230.26 128.15 249.3 128.15 249.3 178.28 155.41 178.28 155.41 128.15 175.7 128.15 175.7 77.39 124.67 147.17" class="maizeM"></polyline> 
+                                <polygon points="585.75 177.87 604.49 177.87 651.91 33.74 632.53 33.74 606.16 123.26 605.74 123.26 579.38 33.74 558.68 33.74 595.93 143.74 585.75 177.87" class="whiteM"></polygon> 
+                                <path d="M507.64,33.74V8.3L525.5.24v33.5h17.2l4.6,13.51H525.5v67.3c0,7,0,15.9,16.34,15.9,1.31,0,4.13-.44,8.06-.86l4.46,13.23c-5.87.44-11.79,2.22-22.1,2.22-17,0-24.62-7-24.62-19.6V47.25H492.8V33.74h14.84" class="whiteM"></path>
+                            </svg>
+                    </a>
+                    <span class="navbar-text white-text my-auto">OCTANE Socket.IO Example</span>
+                </div>
+            </nav>
+        </header>
+        <div id="mainNonNav" class="nonnav">
+            <div class='container'>
+                <h1>Mcity OCTANE jQuery Socket.IO</h1>
+                <p>The API provides Socket.IO support for listening to a subscribable streams of events through web sockets.
+                Follow the steps below to test how to utilize the API through jQuery or other web javascript frameworks.
+                Viewing the source of this page will reveal the code running behind the examples shown here.
+
+                <table cellpadding="5px" cellspacing="20px" style="width: 100%; xwhite-space: nowrap; xtable-layout: fixed;">
+                    <tr>
+                        <td valign="top" style="width: 70%">
+                                <h2>Connect</h2>
+                                Real time push event notification through the OCTANE Socket.IO interface utilizes namespaces and channels to control communication.
+                                As a client all communication will be done on the /octane namespace. This must be specified when connecting.
+                                Channels enable a client to subscribe to specific types of messages by joining or leaving a channel.
+                                On connection to the Mcity implementation the client is automatically joined to 2 channels (user, information).
+                                Namespaces and channel names are case sensitive. All channels and namespaces used in OCTANE are lower cased.
+                
+                                <p>SocketIO Namespace: <b>/octane</b>
+                
+                                <form id="connect" method="POST" action='#'>
+                                    <input type="submit" value="Connect">
+                                </form>
+                
+                                <h2>Authentication</h2>
+                                To use the Socket.IO interface a user must be authenticated. We support two ways of authentication. Through a message to the 
+                                server after successful connection to socket.IO or through query parameter on connection. 
+                                The preferred way to authenticate is through the message after connection and it's done by sending the event
+                                "auth" with a payload that has a key of x-api-key and value of the API key.
+                
+                                Utilizing the query parameter set X-API-KEY to your API key. The query parameter is not the preferred method as it's not
+                                supported for all transport mechanisms. If you establish a socket.io connection over http then upgrade to a websocket, the
+                                query parameter works fine. Some client libraries will attempt direct connection as a websocket and on connection, the user
+                                will be disconnected as the api key was not included.
+                
+                                <br>Query Parameter: <b>X-API-KEY=<i>API_KEY_HERE</i></b>
+                                <br>API Key:<input type="text" name="connect_data" id="connect_data" placeholder="X-API-KEY">
+                
+                
+                
+                                <h2>Receive</h2>
+                                Immediately on connection you'll start to receive different types of messages. The messages you can receive are documented as GET methods at this link:
+                                https://mcity.um.city/apidocs/#/WebSockets-Events
+                
+                                The payloads (with exception of user) are structured as documented at the link above. By parsing the payload data from received events we can 
+                                utilize the facilities real time push notification for changes in infrastructure.
+                
+                                <h2>Send:</h2>
+                                To sent to the API we emit an event on SOCKET.io with a specific payload. The server listens for specific events types and uses 
+                                the type of the event to determine what to do with the payload included.
+                                
+                                Event types that a client can emit are documented here as POST requests: 
+                                https://mcity.um.city/apidocs/#/WebSockets-Events
+                
+                                Let's try emitting an event by clicking the button below.
+                
+                                <form id="send_channel" method="POST" action='#'>
+                                    <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                    <input type="submit" value="Send to Users">
+                                </form>
+                
+                                The client just emitted an event of type "testing" this event isn't supported by the server so it was ignored and no response was sent.
+                
+                                <h2>Subscriptions</h2>
+                                Channels control the type of events you will receive. To see a listing of channels supported and a description see the API docs section here:
+                                https://mcity.um.city/apidocs/#/WebSockets-Channels
+                
+                                To get a listing of channels along with your currently subscribed channels emit a channel event with no payload.
+                                See documentation on possible event types here: https://mcity.um.city/apidocs/#/WebSockets-Events
+                                
+                                <form id="channel" method="POST" action="#">
+                                    <input type="submit" value="Channel List">
+                                </form>
+                
+                                In return the server will emit an event directly to your client that lists both available channels and channels you are
+                                currently a member of. An example response:
+                
+                                Next let's join a new channel. We do this by emitting a join event with a payload that is structured like this:
+                                {
+                                    "channel": "channel name here"
+                                }
+                
+                                Select the intersections channel from the channel list below and press join. If the join is successful, you will receive an event of type join from the server.
+                                Joining a channel you are already subscribed to will do nothing. 
+                
+                                <form id="join" method="POST" action='#'>
+                                    <input type="submit" value="Join Channel">
+                                </form>
+                
+                                To unsubscribe from a channel emit a leave event with a payload similar to join event 
+                                {
+                                    "channel": "channel name here"
+                                }
+                
+                                <form id="leave" method="POST" action='#'>
+                                    <input type="submit" value="Leave Channel">
+                                </form>
+                
+                                Let's clear the console log on the side before we continue. Press the button below to do that when you are ready.
+                                <form id="clear" method="POST" action="#">
+                                    <input type="submit" value="Clear Events">
+                                </form>
+                                <h2>Communication:</h2>
+                                OCTANE enables a user to communicate using Socket.IO with other clients. This is useful for implementing both process synchronization and just basic communication of users while testing.
+                                This type of communication only occurs on the USER channel to which you are automatically subscribed on connection.
+                                For more information about this channel see the API documentation here: https://mcity.um.city/apidocs/#/WebSockets-Channels
+                
+                                The format of these messages and payloads is left to the user. Anything submitted on this event, will be emitted to all 
+                                other users currently connected to the API. To test this, start another browser window with this tool, connect and try to submit
+                                an event using the message area below. That message will emit to all other clients actively connected.
+                                
+                                If you do not wish to receive user messages, a client can leave the default USER channel.
+                
+                                <form id="send_channel" method="POST" action='#'>
+                                    <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                    <input type="submit" value="Send to Users">
+                                </form>
+                
+                
+                                <h2>Disconnecting</h2>
+                                To disconnect two options exist. If you simply close the connection on your end, the server will continue to send messages to your client for a small amount of time.
+                                If you submit a disconnect_event, the server will cleanup your subscriptions and then forcefully disconnect you.
+                                
+                                The second option is preferred if you plan to establish multiple connections to the server from the same client.
+                                Let's disconnect from OCTANE by emitting a disconnect_event with the button below: 
+                
+                                <form id="disconnect" method="POST" action="#">
+                                    <input type="submit" value="Disconnect">
+                                </form>
+                                </p>
+                
+                                </p>
+                                <hr />
+                        </td>
+                        <td valign="top" style="width: 30%">
+                            <h2>Log:</h2>
+                            <div id="log" class="pushMessage"></div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div> <!--Content-->
+    <!--Footer-->
+    <footer class="page-footer accent-4 center-on-small-only nonnav">
+        <!--Copyright-->
+        <div class="footer-copyright black">
+                <div class="container-fluid">
+                    © 2019 <a href="http://regents.umich.edu/" target="_blank">The Regents of the University of Michigan</a>
+                </div>
+        </div>
+            <!--/.Copyright-->
+    </footer>
+</body>
+</html>
