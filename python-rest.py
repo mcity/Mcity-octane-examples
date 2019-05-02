@@ -35,7 +35,7 @@ if not api_key:
 headers = {
     'accept': 'application/json',
     'X-API-KEY': api_key,
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json'
 }
 
 data = '{ "state": { "reset": true, "omit": "01110111", "hold": "10001000", "forceOff": "01110111" }}'

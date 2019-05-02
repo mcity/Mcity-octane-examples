@@ -29,7 +29,6 @@ python-rest.ipynb - A Jupyter notebook containing python code equivalent to the 
 python-socketio.py - A very basic SocketIO client that handles authentication.
 python-rest.py - A very basic Python script executing a few calls to the REST API.
 
-
 ## Installation
 ### Clone the package
 git clone https://github.com/mcity/Mcity-octane-examples.git

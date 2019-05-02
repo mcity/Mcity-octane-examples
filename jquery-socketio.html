@@ -136,13 +136,7 @@
             //     http[s]://<domain>:<port>[/<namespace>]
             var socket = null //io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
             
-            // Event handler for new connections.
-            // The callback function is invoked when a connection with the
-            // server is established.
-
             // Handlers for the different forms in the page.
-            // These accept data from the user and send it to the server in a
-            // variety of ways
             $('form#connect').submit(function(event) {
                 $('#log').append('<br>' + $('<div/>').text('Connecting...').html());
                 token = $('#connect_data').val()
@@ -150,15 +144,13 @@
                     $('#log').append('<br>' + $('<div/>').text('Already connected').html());
                     return false;
                 }
-
-                socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace, {
+                socket = io.connect('https://mcity.um.city' + namespace, {
                     //Un-comment this line to pass token via Query parameters instead of in an auth event.
                     //query: { 'X-API-KEY': token},
                     forceNew: true
                 });
                 socket.on('connect', function() {
-                    socket.emit('auth', {'x-api-key': $('#connect_data').val()});
-                    socketConnected = true;
+                    //We do nothing here in this example, but you could trigger authorization immediately
                 });
                 socket.on('disconnect', function(msg) {
                     $('#log').append('<br>' + $('<div/>').text('*Disconnected*').html());
@@ -170,15 +162,13 @@
                 socket.on('join', function(msg) {
                     $('#log').append('<br>' + $('<div/>').text('*Join Channel* : ' + msg.join).html());
                 });
-                                
                 socket.on('leave', function(msg) {
                     $('#log').append('<br>' + $('<div/>').text('*Leave Channel* : ' + msg.leave).html());
                 });
 
                 socket.on('channels', function(msg) {
                     channels = msg.channels;
-                    $('#channelsJoin').empty()
-                    $('#channelsLeave').empty()
+                    $('#channels').empty()
                     for (i = 0; i < channels.length; i++) { 
                         $('#log').append('<br>' + $('<div/>').text('Channel - Name: ' + channels[i].name + ' Subscribed: ' + channels[i].subscribed).html());
                         $('#channels').append('<option>'+channels[i].name+'</option>');
@@ -255,6 +245,11 @@
 
                 return false;
             });
+            $('form#auth').submit(function(event) {
+                socket.emit('auth', {'x-api-key': $('#connect_data').val()});
+                socketConnected = true;
+                return false;
+            });
             $('form#join').submit(function(event) {
                 socket.emit('join', {channel: $("#channels").val()});
                 return false;
@@ -265,6 +260,10 @@
             });
             $('form#send_channel').submit(function(event) {
                 socket.emit('user_message', {message: $('#channel_data').val()});
+                return false;
+            });
+            $('form#send_test').submit(function(event) {
+                socket.emit('testing', {message: $('#test_data').val()});
                 return false;
             });
             $('form#disconnect').submit(function(event) {
@@ -322,128 +321,155 @@
                 <table cellpadding="5px" cellspacing="20px" style="width: 100%; xwhite-space: nowrap; xtable-layout: fixed;">
                     <tr>
                         <td valign="top" style="width: 70%">
-                                <h2>Connect</h2>
-                                Real time push event notification through the OCTANE Socket.IO interface utilizes namespaces and channels to control communication.
-                                As a client all communication will be done on the /octane namespace. This must be specified when connecting.
-                                Channels enable a client to subscribe to specific types of messages by joining or leaving a channel.
-                                On connection to the Mcity implementation the client is automatically joined to 2 channels (user, information).
-                                Namespaces and channel names are case sensitive. All channels and namespaces used in OCTANE are lower cased.
-                
-                                <p>SocketIO Namespace: <b>/octane</b>
-                
-                                <form id="connect" method="POST" action='#'>
-                                    <input type="submit" value="Connect">
-                                </form>
-                
-                                <h2>Authentication</h2>
-                                To use the Socket.IO interface a user must be authenticated. We support two ways of authentication. Through a message to the 
-                                server after successful connection to socket.IO or through query parameter on connection. 
-                                The preferred way to authenticate is through the message after connection and it's done by sending the event
-                                "auth" with a payload that has a key of x-api-key and value of the API key.
-                
-                                Utilizing the query parameter set X-API-KEY to your API key. The query parameter is not the preferred method as it's not
-                                supported for all transport mechanisms. If you establish a socket.io connection over http then upgrade to a websocket, the
-                                query parameter works fine. Some client libraries will attempt direct connection as a websocket and on connection, the user
-                                will be disconnected as the api key was not included.
-                
-                                <br>Query Parameter: <b>X-API-KEY=<i>API_KEY_HERE</i></b>
-                                <br>API Key:<input type="text" name="connect_data" id="connect_data" placeholder="X-API-KEY">
-                
-                
-                
-                                <h2>Receive</h2>
-                                Immediately on connection you'll start to receive different types of messages. The messages you can receive are documented as GET methods at this link:
-                                https://mcity.um.city/apidocs/#/WebSockets-Events
-                
-                                The payloads (with exception of user) are structured as documented at the link above. By parsing the payload data from received events we can 
-                                utilize the facilities real time push notification for changes in infrastructure.
-                
-                                <h2>Send:</h2>
-                                To sent to the API we emit an event on SOCKET.io with a specific payload. The server listens for specific events types and uses 
-                                the type of the event to determine what to do with the payload included.
-                                
-                                Event types that a client can emit are documented here as POST requests: 
-                                https://mcity.um.city/apidocs/#/WebSockets-Events
-                
-                                Let's try emitting an event by clicking the button below.
-                
-                                <form id="send_channel" method="POST" action='#'>
-                                    <input type="text" name="channel_data" id="channel_data" placeholder="Message">
-                                    <input type="submit" value="Send to Users">
-                                </form>
-                
-                                The client just emitted an event of type "testing" this event isn't supported by the server so it was ignored and no response was sent.
-                
-                                <h2>Subscriptions</h2>
-                                Channels control the type of events you will receive. To see a listing of channels supported and a description see the API docs section here:
-                                https://mcity.um.city/apidocs/#/WebSockets-Channels
-                
-                                To get a listing of channels along with your currently subscribed channels emit a channel event with no payload.
-                                See documentation on possible event types here: https://mcity.um.city/apidocs/#/WebSockets-Events
-                                
-                                <form id="channel" method="POST" action="#">
-                                    <input type="submit" value="Channel List">
-                                </form>
-                
-                                In return the server will emit an event directly to your client that lists both available channels and channels you are
-                                currently a member of. An example response:
-                
-                                Next let's join a new channel. We do this by emitting a join event with a payload that is structured like this:
-                                {
-                                    "channel": "channel name here"
-                                }
-                
-                                Select the intersections channel from the channel list below and press join. If the join is successful, you will receive an event of type join from the server.
-                                Joining a channel you are already subscribed to will do nothing. 
-                
-                                <form id="join" method="POST" action='#'>
-                                    <input type="submit" value="Join Channel">
-                                </form>
-                
-                                To unsubscribe from a channel emit a leave event with a payload similar to join event 
-                                {
-                                    "channel": "channel name here"
-                                }
-                
-                                <form id="leave" method="POST" action='#'>
-                                    <input type="submit" value="Leave Channel">
-                                </form>
-                
-                                Let's clear the console log on the side before we continue. Press the button below to do that when you are ready.
-                                <form id="clear" method="POST" action="#">
-                                    <input type="submit" value="Clear Events">
-                                </form>
-                                <h2>Communication:</h2>
-                                OCTANE enables a user to communicate using Socket.IO with other clients. This is useful for implementing both process synchronization and just basic communication of users while testing.
-                                This type of communication only occurs on the USER channel to which you are automatically subscribed on connection.
-                                For more information about this channel see the API documentation here: https://mcity.um.city/apidocs/#/WebSockets-Channels
-                
-                                The format of these messages and payloads is left to the user. Anything submitted on this event, will be emitted to all 
-                                other users currently connected to the API. To test this, start another browser window with this tool, connect and try to submit
-                                an event using the message area below. That message will emit to all other clients actively connected.
-                                
-                                If you do not wish to receive user messages, a client can leave the default USER channel.
-                
-                                <form id="send_channel" method="POST" action='#'>
-                                    <input type="text" name="channel_data" id="channel_data" placeholder="Message">
-                                    <input type="submit" value="Send to Users">
-                                </form>
-                
-                
-                                <h2>Disconnecting</h2>
-                                To disconnect two options exist. If you simply close the connection on your end, the server will continue to send messages to your client for a small amount of time.
-                                If you submit a disconnect_event, the server will cleanup your subscriptions and then forcefully disconnect you.
-                                
-                                The second option is preferred if you plan to establish multiple connections to the server from the same client.
-                                Let's disconnect from OCTANE by emitting a disconnect_event with the button below: 
-                
-                                <form id="disconnect" method="POST" action="#">
-                                    <input type="submit" value="Disconnect">
-                                </form>
-                                </p>
-                
-                                </p>
-                                <hr />
+                            <h2>Connect</h2>
+                            <p>
+                            Real time push event notification through the OCTANE Socket.IO interface utilizes namespaces and channels to control communication.
+                            As a client all communication will be done on the /octane namespace. This must be specified when connecting.
+                            Channels enable a client to subscribe to specific types of messages by joining or leaving a channel.
+                            </p>
+                            <p>
+                            On connection to the Mcity implementation the client is automatically joined to 2 channels (user, information).
+                            <br>
+                            Namespaces and channel names are case sensitive. All channels and namespaces used in OCTANE are lower cased.
+                            </p>
+                            <p>SocketIO Namespace: <b>/octane</b></p>
+                            <form id="connect" method="POST" action='#'>
+                                <input type="submit" value="Connect">
+                            </form>
+            
+                            <h2>Authentication</h2>
+                            <p>
+                            To use the Socket.IO interface a user must be authenticated. We support two ways of authentication. Through a message to the 
+                            server after successful connection to socket.IO or through query parameter on connection. 
+                            The preferred way to authenticate is through the message after connection and it's done by sending the event
+                            "auth" with a payload that has a key of x-api-key and value of the API key.
+                            </p>
+                            <p>
+                            Utilizing the query parameter set X-API-KEY to your API key. The query parameter is not the preferred method as it's not
+                            supported for all transport mechanisms. If you establish a socket.io connection over http then upgrade to a websocket, the
+                            query parameter works fine. Some client libraries will attempt direct connection as a websocket and on connection, the user
+                            will be disconnected as the api key was not included.
+                            </p>
+                            <p>
+                            <br>Query Parameter: <b>X-API-KEY=<i>API_KEY_HERE</i></b>
+                            <br>API Key:
+                            <form id="auth" method="POST" action='#'>
+                                <input type="text" name="connect_data" id="connect_data" placeholder="X-API-KEY">
+                                <input type="submit" value="Send Authorization message">
+                            </form>
+                            </p>
+                            <h2>Receive</h2>
+                            <p>
+                            Immediately on connection you'll start to receive different types of messages. 
+                            The messages you can receive are documented as GET methods at this 
+                            <a href="https://mcity.um.city/apidocs/#/WebSockets-Events">link.</a>
+                            </p>
+                            <p>
+                            The payloads (with exception of user) are structured as documented at the link above. 
+                            By parsing the payload data from received events we can 
+                            utilize the facilities real time push notification for changes in infrastructure.
+                            </p>
+                            <h2>Send</h2>
+                            <p>
+                            To sent to the API we emit an event on SOCKET.io with a specific payload.<br>
+                            The server listens for specific events types and uses 
+                            the type of the event to determine what to do with the payload included.
+                            </p>
+                            <p>
+                            Event types that a client can emit are documented 
+                            <a href="https://mcity.um.city/apidocs/#/WebSockets-Events">here</a> as POST requests.
+                            </p>
+                            <p>
+                            Let's try emitting an event by clicking the button below.
+                            </p>
+                            <form id="send_test" method="POST" action='#'>
+                                <input type="text" name="test_data" id="test_data" placeholder="Message">
+                                <input type="submit" value="Send Bad Event">
+                            </form>
+                            <p>
+                            The client just emitted an event of type "testing" this event isn't supported by the server so it was ignored and no response was sent.
+                            </p>
+                            <h2>Subscriptions</h2>
+                            <p>
+                            Channels control the type of events you will receive. To see a listing of channels supported and a description see the API docs section
+                            <a href="https://mcity.um.city/apidocs/#/WebSockets-Channels">here.</a>
+                            </p>
+                            <p>
+                            To get a listing of channels along with your currently subscribed channels, emit a channel event with no payload.
+                            See documentation on possible event types here: https://mcity.um.city/apidocs/#/WebSockets-Events
+                            </p>
+                            <form id="channel" method="POST" action="#">
+                                <input type="submit" value="Channel List">
+                            </form>
+                            <p>
+                            In return the server will emit an event directly to your client. This message lists both available channels and channels you are
+                            currently a member of. An example response:
+                            </p>
+                            <p>
+                            Next, let's join a new channel. We do this by emitting a join event with a payload that is structured like this:
+                            <br>{
+                            <br>    "channel": "channel name here"
+                            <br>}
+                            </p>
+                            <p>
+                            Select the intersections channel from the channel list below and press join. 
+                            If the join is successful, you will receive an event of type join from the server.
+                            Joining a channel you are already subscribed to will do nothing. 
+                            </p>
+                            <br>Channels:<select id="channels" name="channel"></select>
+                            <form id="join" method="POST" action='#'>
+                                <input type="submit" value="Join Channel">
+                            </form>
+                            <p>
+                            To unsubscribe from a channel emit a leave event with a payload similar to join event 
+                            <br>{
+                            <br>    "channel": "channel name here"
+                            <br>}
+                            </p>
+                            <form id="leave" method="POST" action='#'>
+                                <input type="submit" value="Leave Channel">
+                            </form>
+                            <p>
+                            <p>
+                            Let's clear the console log on the side before we continue. Press the button below to do that when you are ready.
+                            <form id="clear" method="POST" action="#">
+                                <input type="submit" value="Clear Events">
+                            </form>
+                            </p>
+                            <h2>Communication</h2>
+                            <p>
+                            OCTANE enables a user to communicate using Socket.IO with other clients. This is useful for implementing both process synchronization and just basic communication of users while testing.
+                            This type of communication only occurs on the USER channel to which you are automatically subscribed on connection.
+                            For more information about this channel see the API documentation <a href="https://mcity.um.city/apidocs/#/WebSockets-Channels"> here.</a>
+                            </p>
+                            <p>
+                            The format of these messages and payloads is left to the user. Anything submitted on this event, will be emitted to all 
+                            other users currently connected to the API. To test this, start another browser window with this tool, connect and try to submit
+                            an event using the message area below. That message will emit to all other clients actively connected.
+                            </p>
+                            <p>
+                            If you do not wish to receive user messages, a client can leave the default USER channel.
+                            </p>
+                            <form id="send_channel" method="POST" action='#'>
+                                <input type="text" name="channel_data" id="channel_data" placeholder="Message">
+                                <input type="submit" value="Send to Users">
+                            </form>
+            
+                            <h2>Disconnecting</h2>
+                            <p>
+                            To disconnect, two options exist. If you simply close the connection on your end, the server will continue to send messages to your client for a small amount of time.
+                            If you submit a disconnect_event, the server will cleanup your subscriptions and then forcefully disconnect you.
+                            </p>
+                            <p>
+                            The second option is preferred if you plan to establish multiple connections to the server from the same client.
+                            Let's disconnect from OCTANE by emitting a disconnect_event with the button below: 
+                            </p>
+                            <form id="disconnect" method="POST" action="#">
+                                <input type="submit" value="Disconnect">
+                            </form>
+                            </p>
+                            </p>
+                            <hr />
                         </td>
                         <td valign="top" style="width: 30%">
                             <h2>Log:</h2>
