@@ -23,8 +23,7 @@ You can utilize the documentation interface to submit specific requests, or gene
 ## Repository Structure
 
 jquery-socketio.html - Sample jquery application that runs requests and handles/parses responses.
-jQuery-rest.html - Sample jquery application that makes requests through the REST interface
-python-socketio.ipynb - A Jupyter notebook containing python code equivalent to the jQuery SocketIO example 
+python-socketio.ipynb - A Jupyter notebook containing python code equivalent to the jQuery SocketIO example
 python-rest.ipynb - A Jupyter notebook containing python code equivalent to the jQuery REST example.
 python-socketio.py - A very basic SocketIO client that handles authentication.
 python-rest.py - A very basic Python script executing a few calls to the REST API.
@@ -67,7 +66,7 @@ $ jupyter notebook
 
 Start scripts
 ```sh
-$ python socketio-example.py
+$ python python-socketio.py
 ```
 
 ### Development

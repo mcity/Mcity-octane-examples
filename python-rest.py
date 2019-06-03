@@ -10,14 +10,13 @@ import requests
 load_dotenv()
 api_key = os.environ.get('MCITY_OCTANE_KEY', None) 
 server = os.environ.get('MCITY_OCTANE_SERVER', 'http://localhost:5000')
-namespace = "/octane"
 
 #If no API Key provided, exit.
 if not api_key:
     print ("No API KEY SPECIFIED. EXITING")
     exit()
 
-#Set State/Liberty to Red
+#Set State/Liberty to North/South Red
 # Query /intersections to get the intersection ID. It's 1 for this light.
 #
 # Look at stage data on the intersection to find the non-conflicting phases for this 
