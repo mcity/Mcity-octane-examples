@@ -7,7 +7,7 @@ While not all functionality is included, this repository functions as a getting 
 Core functionality of these examples is storing your user access token (usually in an environment variable), and making requests to the API through either a http request or a Socket.IO websocket. Any language which supports either type of functionality through supporting libraries can be used to access the API.
 
 ## Servers for usage
-The scripts included default to the production environment as they are targeted at users presently renting the facility. The production server is https://mcity.um.city. To acquire a production access key you must rent the Mcity test facility by scheduling through https://scheduling.um.city
+The scripts included default to the production environment as they are targeted at users presently renting the facility. The production server is https://mcity.um.city. To acquire a production access key you must rent the Mcity tes facility by scheduling through https://scheduling.um.city
 
 Before your scheduled session, you can utilize these scripts against our test environment by making manual changes within the .html files and the env_sample (or .env) file to switch the server to https://mvillage.um.city
 
@@ -27,6 +27,7 @@ python-socketio.ipynb - A Jupyter notebook containing python code equivalent to 
 python-rest.ipynb - A Jupyter notebook containing python code equivalent to the jQuery REST example.
 python-socketio.py - A very basic SocketIO client that handles authentication.
 python-rest.py - A very basic Python script executing a few calls to the REST API.
+python-v2x.py - An example script aimed at use in the Ann Arbor Connected Environment. Connects/Queries a specific Parsed RSU SPaT feed.
 
 ## Installation
 ### Clone the package
