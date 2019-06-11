@@ -84,7 +84,10 @@ def on_channels(data):
     #At this point let's join the stream for the RSU we are interested in.
     #The channel format is v2x_rsu_[id]_parsed (or raw)
     channel = 'v2x_rsu_' + v2xid + '_parsed'
+    #Show all the rsu messages parsed:
     #channel = 'v2x_rsu_parsed'
+    #Show all the obu messages raw:
+    #channel = 'v2x_obu_raw'
     # let's join the V2X channel.
     sio.emit('join', {'channel': channel}, namespace=namespace)
 
@@ -92,6 +95,13 @@ def on_channels(data):
 def on_spat(data):
     """
     Event fired for each V2X Parsed SPaT message
+    """
+    print(data)
+
+@sio.on('v2x_raw', namespace=namespace)
+def on_raw(data):
+    """
+    Event fired for each V2X RAW message
     """
     print(data)
 
