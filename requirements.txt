@@ -2,7 +2,7 @@ appnope==0.1.0
 astroid==2.2.5
 attrs==19.1.0
 backcall==0.1.0
-bleach==3.1.0
+bleach>=3.1.1
 certifi==2019.3.9
 chardet==3.0.4
 decorator==4.4.0
@@ -40,7 +40,7 @@ pylint==2.3.1
 pyrsistent==0.15.2
 python-dateutil==2.8.0
 python-dotenv==0.10.3
-python-engineio==3.8.2.post1
+python-engineio>=3.9.0
 python-socketio==4.1.0
 pyzmq==18.0.1
 qtconsole==4.5.1
