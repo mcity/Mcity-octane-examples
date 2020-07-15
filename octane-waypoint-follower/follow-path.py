@@ -233,6 +233,8 @@ class PathFollower(ABC):
                                                              point_count):
                     if prev_point_lat and prev_point_lng:
                         heading, _, _ = self.geod.inv(prev_point_lng, prev_point_lat, point_lng, point_lat)
+                        if (heading < 0):
+                            heading += 360
 
                         yield MovingPoint(speed=self.velocity_meters_per_s, heading=heading, coordinates=(point_lng, point_lat))
 
