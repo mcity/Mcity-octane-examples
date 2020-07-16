@@ -1,8 +1,10 @@
-#!/bin/env python
+#!/usr/bin/env python
 
+import argparse
 import math
 import time
 from abc import ABC
+from decimal import Decimal
 
 import geojson
 import requests
@@ -286,12 +288,38 @@ class HumanPathFollower(PathFollower, PSM):
     pass
 
 
-def main():
-    with OctaneInstance("reticulatingsplines", "https://octane.mvillage.um.city") as octane:
-        vpf = VehiclePathFollower("roundabout.json", 11)
-        vpf.follow(octane)
+class ChoosePathFollower(argparse.Action):
+    path_followers = {
+        "human": HumanPathFollower,
+        "vehicle": VehiclePathFollower,
+    }
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, self.path_followers[values])
 
 
-if __name__ == '__main__':
-    main()
+parser = argparse.ArgumentParser(description="Given a path in GeoJSON, this script will work out a linear "
+                                             "traversal of them based on a model (vehicle, human, etc.) It will "
+                                             "produce a set of V2X messages and insert them into OCTANE, attempting to "
+                                             "produce them according to the expected timing for the particular message "
+                                             "type (BSM, PSM, etc.)",
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("geojson_file", metavar="geojson-file",
+                    help="Filename containing a valid GeoJSON LineString or MultiPoint to follow.")
+parser.add_argument("-t", "--v2x-type", action=ChoosePathFollower, default=VehiclePathFollower,
+                    choices=ChoosePathFollower.path_followers.keys(),
+                    help="What type of path follower (and thus V2X message) should we use?")
+parser.add_argument("-s", "--speed", type=Decimal, default=Decimal(5.0),
+                    help="Speed to traverse path, in meters/second")
+parser.add_argument("-o", "--octane-server", default="https://octane.mvillage.um.city",
+                    help="OCTANE server to use")
+parser.add_argument("-a", "--auth", default="reticulatingsplines",
+                    help="OCTANE authorization key to use")
+args = parser.parse_args()
+
+print(f"Running with {args.geojson_file} against octane instance at {args.octane_server}")
+
+with OctaneInstance(args.auth, args.octane_server) as octane:
+    vpf = args.v2x_type(args.geojson_file, args.speed)
+    vpf.follow(octane)
 
