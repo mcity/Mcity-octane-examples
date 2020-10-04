@@ -1,0 +1,6 @@
+geojson==2.5.0
+pyproj==2.5.0
+python-engineio==3.13.1
+python-socketio==4.6.0
+requests==2.23.0
+websocket-client==0.57.0
