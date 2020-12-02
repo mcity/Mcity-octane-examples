@@ -94,6 +94,10 @@ class V2XMessageType(ABC):
     frequency_hz = 1
     protocol = "J2735_201603"
 
+    _base_params = {
+        "messageSet": protocol,
+    }
+
     @property
     def time_per_msg_s(self):
         """
@@ -104,14 +108,6 @@ class V2XMessageType(ABC):
     def endpoint(self, rsu_id):
         pass
 
-    def as_message(self, moving_point):
-        """
-        Given a MovingPoint, return a dict that can be POSTed to OCTANE as JSON
-        :param moving_point: An instance of MovingPoint
-        :return: a dict of message params
-        """
-        pass
-
     @property
     def name(self):
         """
@@ -119,24 +115,42 @@ class V2XMessageType(ABC):
         """
         pass
 
+    def as_message(self, moving_point, extra_args=None):
+        """
+        Given a MovingPoint, return a dict that can be POSTed to OCTANE as JSON
+        :param moving_point: An instance of MovingPoint
+        :return: a dict of message params
+        """
+        message = {
+            "longitude": moving_point.coordinates[0],
+            "latitude": moving_point.coordinates[1],
+            "elevation": moving_point.coordinates[2] if len(moving_point.coordinates) > 2 else 0,
+            "speed": moving_point.speed,
+            "heading": moving_point.heading
+        }
+        message.update(self._base_params)
+        if extra_args:
+            message.update(self.extra_args)
+
+        return message
+
 
 class BSM(V2XMessageType):
     """
     Basic Safety Message
     """
     frequency_hz = 10
-    id = "000003B5" # 949 for now, in the Mcity range. TODO: allow setting this
 
-    # TODO: allow initialization of these
-    _base_params = {
-        "id": id,
-        "idTemporary": id,
-        "idFixed": id,
-        "angle": 0.0, # TODO: compute!
-        "messageSet": V2XMessageType.protocol,
-        "vehicleLength": 4.5,
-        "vehicleWidth": 1.83,
-    }
+    _base_params = V2XMessageType._base_params.copy()
+    _base_params.update({
+            # Default ID is 950, in Mcity range
+            "id": "000003B6", 
+            "idTemporary": "000003B6", 
+            "idFixed": "000003B6",
+            "vehicleLength": 4.5,
+            "vehicleWidth": 1.83,
+            "angle": 0.0, # TODO: compute!
+        })
 
     def endpoint(self, rsu_id):
         # Assumes OCTANE of course!
@@ -146,24 +160,20 @@ class BSM(V2XMessageType):
     def name(self):
         return "BSM"
 
-    def as_message(self, moving_point):
-        message = {
-            "longitude": moving_point.coordinates[0],
-            "latitude": moving_point.coordinates[1],
-            "elevation": moving_point.coordinates[2] if len(moving_point.coordinates) > 2 else 0,
-            "speed": moving_point.speed,
-            "heading": moving_point.heading
-        }
-        message.update(self._base_params)
-
-        return message
-
 
 class PSM(V2XMessageType):
     """
     Pedestrian Safety Message
     """
     frequency_hz = 5
+
+    _base_params = V2XMessageType._base_params.copy()
+    _base_params.update({
+            # Default ID
+            "id": "0010BEEF", 
+            "type": "pedestrian",
+            "size": "small",
+        })
 
     def endpoint(self, rsu_id):
         # Assumes OCTANE of course!
@@ -173,8 +183,6 @@ class PSM(V2XMessageType):
     def name(self):
         return "PSM"
 
-    def as_message(self, moving_point):
-        raise NotImplementedError
 
 
 class PathFollower(ABC):
