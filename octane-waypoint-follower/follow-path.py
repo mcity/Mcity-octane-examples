@@ -53,6 +53,7 @@ class OctaneInstance:
     def emit(self, channel, payload):
         self.socket.emit(channel, payload, namespace=self.OctaneNamespace.namespace)
 
+
     def post_json_message(self, endpoint, json_message):
         return self.session.post("%s%s" % (self.api_base_url, endpoint), json=json_message)
 
@@ -91,7 +92,7 @@ class V2XMessageType(ABC):
     """
     Types of V2X messaging to support, per SAE J2735
     """
-    frequency_hz = 1
+    frequency_hz = 160
     protocol = "J2735_201603"
 
     _base_params = {
@@ -139,7 +140,7 @@ class BSM(V2XMessageType):
     """
     Basic Safety Message
     """
-    frequency_hz = 10
+    frequency_hz = 160
 
     _base_params = V2XMessageType._base_params.copy()
     _base_params.update({
@@ -150,6 +151,13 @@ class BSM(V2XMessageType):
             "vehicleLength": 4.5,
             "vehicleWidth": 1.83,
             "angle": 0.0, # TODO: compute!
+        })
+
+    def update_id(self, new_id):
+        self._base_params.update({
+            "id": new_id,
+            "idTemporary": new_id,
+            "idFixed": new_id
         })
 
     def endpoint(self, rsu_id):
@@ -165,7 +173,7 @@ class PSM(V2XMessageType):
     """
     Pedestrian Safety Message
     """
-    frequency_hz = 5
+    frequency_hz = 160
 
     _base_params = V2XMessageType._base_params.copy()
     _base_params.update({
@@ -323,11 +331,13 @@ parser.add_argument("-o", "--octane-server", default="https://octane.mvillage.um
                     help="OCTANE server to use")
 parser.add_argument("-a", "--auth", default="reticulatingsplines",
                     help="OCTANE authorization key to use")
+parser.add_argument("-i", "--id", default="000003B6",
+                    help="Set the visible id for this VPF")
 args = parser.parse_args()
 
 print(f"Running with {args.geojson_file} against octane instance at {args.octane_server}")
 
 with OctaneInstance(args.auth, args.octane_server) as octane:
     vpf = args.v2x_type(args.geojson_file, args.speed)
+    vpf.update_id(args.id)
     vpf.follow(octane)
-
