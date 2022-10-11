@@ -1,3 +1,8 @@
+"""
+utils.py
+
+Utility methods for accessing beacon information stored in a local redis instance.
+"""
 import logging
 import re
 import subprocess
@@ -9,12 +14,13 @@ import requests
 from dotenv import load_dotenv
 
 load_dotenv()
-OCTANE_URL = os.environ['OCTANE_URL']
-OCTANE_KEY = os.environ['OCTANE_KEY']
+api_key = os.environ.get('MCITY_OCTANE_KEY', None)
+server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.mvillage.um.city/')
 
 GNSS_LOCATION_KEY = 'gnss:position:oxdecoder'
 GNSS_SATELLITES_KEY = 'gnss:position:satellites:5'
 GNSS_FIXTYPE_KEY = 'gnss:position:current:fixType:5'
+
 
 class RTKUtility:
     @staticmethod
@@ -35,14 +41,15 @@ class RTKUtility:
 
     @staticmethod
     def connect_beacon():
-        '''
+        """
         Attempt to connect to Octane and see if the Beacon has been configured
 
         :return: (True/False,message) True if we were able to establish a connection and the Beacon ID has been configured
-        '''
-        headers = { 'X-API-KEY': OCTANE_KEY }
+        """
+        headers = {'X-API-KEY': api_key}
         try:
-            r = requests.get( '{}/api/beacon/{}'.format( OCTANE_URL, RTKUtility.get_device_id_clean()), headers=headers, timeout=5 )
+            r = requests.get('{}/api/beacon/{}'.format(server, RTKUtility.get_device_id_clean()),
+                              headers=headers, timeout=5)
             # Would be nice to distinguish page not found from no beacon in a status code
             if r.status_code == 404:
                 if 'does not exist' in r.text:
@@ -54,7 +61,7 @@ class RTKUtility:
             elif r.status_code != 200:
                 return False, r.status_code
         except:
-            logging.error( traceback.print_exc())
+            logging.error(traceback.print_exc())
             return False, 'Connection Error'
 
         return True, 'McityOS'
@@ -62,7 +69,6 @@ class RTKUtility:
     @staticmethod
     def get_device_id_clean():
         return netifaces.ifaddresses('wlan0')[netifaces.AF_LINK][0].get('addr').replace(':','')[-6:].upper()
-
 
     @staticmethod
     def get_gps_latlong():
@@ -75,7 +81,7 @@ class RTKUtility:
                 logging.info( 'No GPS location found - redis key [{}], returning 0,0'.format(GNSS_LOCATION_KEY))
                 return 0,0,0,0
         except:
-            logging.error( traceback.print_exc())
+            logging.error(traceback.print_exc())
             return 0, 0,0,0
 
     @staticmethod
@@ -89,7 +95,7 @@ class RTKUtility:
             sat_in_view = gnss_info[1]
             fixtype = r.get(GNSS_FIXTYPE_KEY).decode('utf-8')
         except:
-            logging.error( traceback.print_exc())
+            logging.error(traceback.print_exc())
             return None, None, None
 
         return location, fixtype, sat_in_view

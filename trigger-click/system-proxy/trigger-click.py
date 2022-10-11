@@ -2,15 +2,14 @@
 trigger-click.py
 Click a location on the screen when a trigger is activated in OCTANE.
 """
-import os
 import sys
-import json
-import socketio
+
 import arrow
 import click
 import pyautogui
+import socketio
 
-#Default Globals - Don't change, provide via command line.
+# Default Globals - Don't change, provide via command line.
 global_api_token = 'reticulatingsplines'
 global_continuous_click = True
 global_x_click = 0
@@ -19,14 +18,15 @@ global_trigger_type = 'SOFTWARE'
 global_trigger_id = '0'
 namespace = "/octane"    
 
-#sio = socketio.Client(logger=True, engineio_logger=True)
 sio = socketio.Client()
+
 
 def send_auth():
     """
     Emit an authentication event.
     """
     sio.emit('auth', {'x-api-key': global_api_token}, namespace=namespace)
+
 
 #Define event callbacks
 @sio.on('connect', namespace=namespace)
@@ -36,6 +36,7 @@ def on_connect():
     """
     send_auth()
 
+
 @sio.on('join', namespace=namespace)
 def on_join(data: dict):
     """
@@ -44,6 +45,7 @@ def on_join(data: dict):
     #print('Subscribed to:', data)
     pass
 
+
 @sio.on('channels', namespace=namespace)
 def on_channels(data: dict):
     """
@@ -51,6 +53,7 @@ def on_channels(data: dict):
     """
     channel = 'ipc'
     sio.emit('join', {'channel': channel}, namespace=namespace)
+
 
 @sio.on('ipc_message', namespace=namespace)
 def on_ipc(data: dict):
@@ -89,6 +92,7 @@ def on_ipc(data: dict):
     else:
         print("Ignoring activated: ", activated, type, id, global_trigger_type, int(global_trigger_id))
 
+
 @sio.on('auth_fail', namespace=namespace)
 def on_auth_fail(data: str):
     """
@@ -96,12 +100,14 @@ def on_auth_fail(data: str):
     """
     print('Failed auth', data)
 
+
 @sio.on('disconnect', namespace=namespace)
 def on_disconnect():
     """
     Event fired on disconnect.
     """
     print('disconnected from server')
+
 
 @click.group()
 def cli_click():
@@ -114,9 +120,13 @@ def cli_click():
 @click.argument('trigger-id')
 @click.argument('x')
 @click.argument('y')
-@click.option('--xy-picker/--no-xy-picker', default=False, help='Interactive screen location picker, override X and Y position.')
-@click.option('--continuous/--no-continuous', default=True, help='Each time the trigger fires, this application will click. Specifying this option as false will cause the application to exit after one click.')
-def trigger(octane_server='https://octane.mvillage.um.city', api_token='reticulatingsplines', trigger_type='SOFTWARE', trigger_id='SOFTWARE', x=0, y=0, xy_picker=False, continuous=True):
+@click.option('--xy-picker/--no-xy-picker', default=False, help='Interactive screen location picker, override X and Y '
+                                                                'position.')
+@click.option('--continuous/--no-continuous', default=True, help='Each time the trigger fires, this application will '
+                                                                 'click. Specifying this option as false will cause '
+                                                                 'the application to exit after one click.')
+def trigger(octane_server='https://octane.mvillage.um.city', api_token='reticulatingsplines', trigger_type='SOFTWARE',
+            trigger_id='SOFTWARE', x=0, y=0, xy_picker=False, continuous=True):
     """When a specific OCTANE trigger is sent, click a location on the screen.
     OCTANE_SERVER - OCTANE server instance
     API_TOKEN - OCTANE API token
@@ -134,12 +144,12 @@ def trigger(octane_server='https://octane.mvillage.um.city', api_token='reticula
     global global_trigger_id
 
     if xy_picker:
-        print ("Move your mouse to the desired clicking location and press CTRL-C to choose that position.")
+        print("Move your mouse to the desired clicking location and press CTRL-C to choose that position.")
         current_pos = pyautogui.position()
         while True:
             try:
                 current_pos = pyautogui.position()
-                print ('\bPosition: {}'.format(current_pos), end='\r')
+                print('\bPosition: {}'.format(current_pos), end='\r')
                 sys.stdout.flush()
             except KeyboardInterrupt:
                 break
@@ -158,10 +168,11 @@ def trigger(octane_server='https://octane.mvillage.um.city', api_token='reticula
     print("Starting OCTANE connection. Will wait for {} trigger of id {}".format(trigger_type, trigger_id))
     print('Trigger Click will click location X {}, Y {} on trigger'.format(global_x_click, global_y_click))
 
-    #Make connection to OCTANE and wait for events.
+    # Make connection to OCTANE and wait for events.
     sio.connect(octane_server, transports=None, namespaces=[namespace])
     sio.wait()
     exit()
+
 
 cli = click.CommandCollection(sources=[cli_click])
 if __name__ == '__main__':
