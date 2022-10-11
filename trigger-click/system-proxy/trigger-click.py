@@ -57,27 +57,37 @@ def on_ipc(data: dict):
     """
     Event fired for each ipc message.
     """
-    if data.get('type', None) == 'TRIGGER':
-        #ON Trigger do something...
-        payload = data.get('payload', None)
-        if payload:
-            id = payload.get('id', None)
-            type = payload.get('triggerType')
-            state = payload.get('state', None)
-            activated = False
-            if payload.get('state', None):
-                activated = payload.get('state').get('activated', False)
-            if activated and type == global_trigger_type and id == int(global_trigger_id):
-                try:
-                    pyautogui.moveTo(int(global_x_click), int(global_y_click), duration=0)
-                    pyautogui.click(clicks=1, button='left')
-                except:
-                    print ("Failed to move the mouse, does this application have the required permissions?")
-                print("{}:{}\n".format(arrow.utcnow().format('YYYY-MM-DDTHH:mm:ssZZ'), data), end="")
-                if not global_continuous_click:
-                    #Exit after one click
-                    sio.disconnect()
-                    raise Exception("Exit after single trigger activation.")
+    print("Received: ", data)
+    if data.get('type', None) != 'TRIGGER':
+        print("Ignoring type ", data.get('type', None))
+        return
+
+    #ON Trigger do something...
+    payload = data.get('payload', None)
+    if not payload:
+        print("Ignoring payload ", data.get('payload', None))
+        return
+
+    id = payload.get('id', None)
+    type = payload.get('triggerType')
+    state = payload.get('state', None)
+    activated = False
+    if payload.get('state', None):
+        activated = payload.get('state').get('activated', False)
+    if activated and type == global_trigger_type and id == int(global_trigger_id):
+        try:
+            pyautogui.moveTo(int(global_x_click), int(global_y_click), duration=0)
+            pyautogui.click(clicks=1, button='left')
+        except:
+            print ("Failed to move the mouse, does this application have the required permissions?")
+
+        print("{}:{}\n".format(arrow.utcnow().format('YYYY-MM-DDTHH:mm:ssZZ'), data), end="")
+        if not global_continuous_click:
+            #Exit after one click
+            sio.disconnect()
+            raise Exception("Exit after single trigger activation.")
+    else:
+        print("Ignoring activated: ", activated, type, id, global_trigger_type, int(global_trigger_id))
 
 @sio.on('auth_fail', namespace=namespace)
 def on_auth_fail(data: str):

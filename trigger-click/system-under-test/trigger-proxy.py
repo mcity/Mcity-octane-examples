@@ -1,33 +1,34 @@
 """
-python-beason-socketio.py
-Sample Mcity OCTANE python socketio script to listen to beacon updates.
+python-socketio.py
+Sample Mcity OCTANE python socketio script
 """
 import os
+import time
 from dotenv import load_dotenv
 import socketio
 
-# Load environment variables
+#Load environment variables
 load_dotenv()
-api_key = os.environ.get('MCITY_OCTANE_KEY', None)
+api_key = os.environ.get('MCITY_OCTANE_KEY', 'armadillo') 
 server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.um.city/')
 namespace = "/octane"
 
-# If no API Key provided, exit.
+#If no API Key provided, exit.
 if not api_key:
     print ("No API KEY SPECIFIED. EXITING")
     exit()
 
-# Create an SocketIO Python client.
+#Create an SocketIO Python client.
 sio = socketio.Client()
-
 # Async client is available also: sio = socketio.AsyncClient()
+
 def send_auth():
     """
     Emit an authentication event.
     """
     sio.emit('auth', {'x-api-key': api_key}, namespace=namespace)
 
-# Define event callbacks
+#Define event callbacks
 @sio.on('connect', namespace=namespace)
 def on_connect():
     """
@@ -41,7 +42,7 @@ def on_join(data):
     Event fired when user joins a channel
     """
     print('Join received with ', data)
-
+    
 @sio.on('channels', namespace=namespace)
 def on_channels(data):
     """
@@ -60,26 +61,15 @@ def on_disconnect():
 def on_auth_ok(data):
     global sio
     print('\n\ngot auth ok event')
-    print('Subscribing to beacon channel')
-    sio.emit('join', {'channel': 'beacon'}, namespace=namespace)
-    sio.emit('join', {'channel': 'v2x_obu_parsed'}, namespace=namespace)
+    print('Subscribing to ipc channel')
+    sio.emit('join', {'channel': 'ipc'}, namespace=namespace)
 
-@sio.on('beacon_update', namespace=namespace)
-def on_beacon_update(data):
-    '''
-    Fired each time a beacon sends us position data
-    '''    
-    print('Beacon update: ', data)
-
-@sio.on('v2x_BSM', namespace=namespace)
-def on_v2x(data):
-    '''
-    Fired each time a beacon sends us position data
-    '''    
-    print('Beacon update: ', data)
-
-
-# Make connection, everything else is event based.
+#Make connection.
 sio.connect(server, namespaces=[namespace])
-sio.wait()
+
+time.sleep(2)
+print('Sending trigger for ID 1')
+sio.emit('ipc_message', {"type": "TRIGGER", "payload": {"id": 1, "triggerType": "software", "state": {"activated": True}}}, namespace=namespace)
+sio.disconnect
+
 

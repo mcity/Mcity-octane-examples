@@ -8,8 +8,8 @@ import socketio
 
 #Load environment variables
 load_dotenv()
-api_key = os.environ.get('MCITY_OCTANE_KEY', None) 
-server = os.environ.get('MCITY_OCTANE_SERVER', 'http://localhost:5000')
+api_key = os.environ.get('MCITY_OCTANE_KEY', 'chipmunk') 
+server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://mcity.um.city/')
 namespace = "/octane"
 
 #If no API Key provided, exit.
@@ -55,6 +55,13 @@ def on_disconnect():
     Event fired on disconnect.
     """
     print('disconnected from server')
+
+@sio.on('auth_ok', namespace=namespace)
+def on_auth_ok(data):
+    global sio
+    print('\n\ngot auth ok event')
+    print('Subscribing to intersection channel')
+    sio.emit('join', {'channel': 'intersection'}, namespace=namespace)
 
 #Make connection.
 sio.connect(server, namespaces=[namespace])
