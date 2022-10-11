@@ -75,14 +75,14 @@ class RTKUtility:
         r = redis.Redis(host='localhost', port=6379, db=0)
         try:
             ret_value = r.hgetall(GNSS_LOCATION_KEY)
-            if ret_value is not None:
+            if ret_value:
                 return ret_value.get(b'lat'), ret_value.get(b'long'), ret_value.get(b'heading'), ret_value.get(b'speed')
             else:
-                logging.info( 'No GPS location found - redis key [{}], returning 0,0'.format(GNSS_LOCATION_KEY))
-                return 0,0,0,0
+                logging.info('No GPS location found - redis key [{}], returning 0,0'.format(GNSS_LOCATION_KEY))
+                return 0, 0, 0, 0
         except:
             logging.error(traceback.print_exc())
-            return 0, 0,0,0
+            return 0, 0, 0, 0
 
     @staticmethod
     def get_gps_stats():

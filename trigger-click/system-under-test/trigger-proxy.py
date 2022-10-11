@@ -12,6 +12,8 @@ import socketio
 load_dotenv()
 api_key = os.environ.get('MCITY_OCTANE_KEY', None)
 server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.mvillage.um.city/')
+beacon_id = os.environ.get('MCITY_BEACON_ID', 1)
+
 namespace = "/octane"
 trigger_ready = False
 trigger_sent = False
@@ -82,7 +84,7 @@ if __name__ == '__main__':
 
     # Send trigger request. Ideally this is incorporated into a running interpreter, so the connection above is already
     # available before calling this function, for lowest latency
-    trigger(1)
+    trigger(beacon_id)
 
     # Wait until the message has been sent
     while not trigger_sent:

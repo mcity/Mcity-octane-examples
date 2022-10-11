@@ -10,7 +10,7 @@ import socketio
 # Load environment variables
 load_dotenv()
 api_key = os.environ.get('MCITY_OCTANE_KEY', None)
-server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.mvillage.um.city/')
+server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.mvillage.um.city')
 namespace = "/octane"
 
 # If no API Key provided, exit.
