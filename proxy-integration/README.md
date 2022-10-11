@@ -1,8 +1,8 @@
-# OCTANE Trigger Click
+# OCTANE Proxy Integration
 
-These script demonstrate reacting to IPC Trigger events in OCTANE, and broadcasting proxy state to anyone listening.
+These scripts demonstrate very basic integration of a robot proxy into Mcity OS. This is demonstrated in two parts,
+by reacting to IPC Trigger events in OCTANE, and broadcasting proxy state to anyone listening.
 
-Specifically this script will wait for a trigger event from a given device and then click a specified location on the screen when it occurs. This provides the start of a framework for integrating systems which only provide a GUI interface for activation.
 
 ## Installation
 
@@ -36,7 +36,9 @@ $ python trigger-click/system-under-test/trigger-proxy.py
 
 For the proxy (VRU, soft vehicle, etc), we want to listen for trigger requests, and provide position updates. To listen 
 for trigger requests, we can use this click script, which will click a "Go" button in the proxy software when a
-trigger request is received:
+trigger request is received. Specifically this script will wait for a trigger event from a given device and then click 
+a specified location on the screen when it occurs. This provides the start of a framework for integrating systems which 
+only provide a GUI interface for activation.
 
 ```commandline
 $ # args are OCTANE_SERVER API_TOKEN TRIGGER_TYPE TRIGGER_ID X Y
