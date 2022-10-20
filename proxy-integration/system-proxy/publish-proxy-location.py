@@ -9,6 +9,7 @@ import logging
 import os
 
 import socketio
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from utils import RTKUtility
@@ -43,9 +44,11 @@ class OctaneComm(socketio.AsyncClientNamespace):
         await sio.connect(server, namespaces=['/octane'])
 
     async def send_beacon_update(self):
-        latitude, longitude, heading, speed = RTKUtility.get_gps_latlong()
+        latitude, longitude, heading, speed, reading_taken_s = RTKUtility.get_gps_latlong()
         if latitude is None or latitude == 0:
             return
+
+	reading_taken_dt = datetime.fromtimestamp(reading_taken_s, timezone.utc)
 
         logging.info(f'Emitting beacon update lat = {latitude}, long = {longitude}')
 
@@ -56,10 +59,12 @@ class OctaneComm(socketio.AsyncClientNamespace):
                     "dynamics": {
                         "longitude": float(longitude),
                         "latitude": float(latitude),
-                        "heading": 0,
-                        "velocity": 0,
+                        "heading": heading,
+                        "velocity": speed,
                         "acceleration": 0,
                         "elevation": 0,
+			# Format is 2022-10-20T13:09:21.422Z
+			"updated": reading_taken_dt.isoformat(sep='T', timespec='milliseconds')
                     }
                 }
             }
