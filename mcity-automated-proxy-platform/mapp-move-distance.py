@@ -13,8 +13,8 @@ import socketio
 
 
 if len(sys.argv) == 3:
-    meters = sys.argv[1]
-    meters_per_second = sys.argv[2]
+    meters = float(sys.argv[1])
+    meters_per_second = float(sys.argv[2])
 else:
     meters = 1.0
     meters_per_second = 0.5
@@ -102,7 +102,7 @@ def trigger(proxy_id, meters, meters_per_second):
             }
         },
         namespace=namespace,
-        trigger_callback=sent
+        callback=trigger_callback
     )
 
 def cancel(proxy_id):

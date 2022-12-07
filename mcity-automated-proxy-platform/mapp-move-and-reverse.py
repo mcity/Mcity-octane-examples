@@ -12,10 +12,11 @@ import time
 from dotenv import load_dotenv
 import socketio
 
+print(len(sys.argv))
 if len(sys.argv) == 4:
-    meters = sys.argv[1]
-    meters_per_second = sys.argv[2]
-    wait_time = sys.argv[3]
+    meters = float(sys.argv[1])
+    meters_per_second = float(sys.argv[2])
+    wait_time = float(sys.argv[3])
 else:
     meters = 1.0
     meters_per_second = 0.5
@@ -28,8 +29,6 @@ server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.mvillage.um.city/')
 proxy_id = os.environ.get('MCITY_ROBOT_ID', 1)
 channel = "robot_proxy"
 room = "robot"
-meters = 1.0
-meters_per_second = 0.5
 
 namespace = "/octane"
 connected = False
@@ -87,7 +86,7 @@ def on_robot_proxy(data):
     print(data)
 
 
-def sent():
+def trigger_callback():
     global sent
     sent = True
     print("Message sent")
@@ -110,7 +109,7 @@ def trigger(proxy_id, meters, meters_per_second):
             }
         },
         namespace=namespace,
-        callback=sent
+        callback=trigger_callback
     )
 
 def cancel(proxy_id):
