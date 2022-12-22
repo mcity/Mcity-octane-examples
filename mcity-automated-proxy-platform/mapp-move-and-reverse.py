@@ -1,6 +1,6 @@
 
 """
-control-proxy.py
+mapp-move-and-reverse.py
 
 Sample Mcity OS script to control a MAPP, moving first forward and then in reverse.
 
@@ -9,7 +9,7 @@ Either edit the default values below or pass in the values as command line argum
 import sys
 import os
 import time
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import socketio
 
 print(len(sys.argv))
@@ -23,7 +23,7 @@ else:
     wait_time = 1.0
 
 # Load environment variables
-load_dotenv()
+# load_dotenv()
 api_key = os.environ.get('MCITY_OCTANE_KEY', None)
 server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.mvillage.um.city/')
 proxy_id = os.environ.get('MCITY_ROBOT_ID', 1)

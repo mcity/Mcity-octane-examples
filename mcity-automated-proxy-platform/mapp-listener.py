@@ -1,7 +1,8 @@
-"""
-mapp-move-distance.py
 
-Sample Mcity OS script to control a MAPP, moving forward in a straight line.
+"""
+mapp-listener.py
+
+Sample Mcity OS script that listens to everything published on the robot_proxy channel.
 
 Either edit the default values below or pass in the values as command line arguments.
 """
@@ -23,13 +24,12 @@ else:
 #load_dotenv()
 api_key = os.environ.get('MCITY_OCTANE_KEY', None)
 server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.mvillage.um.city/')
-proxy_id = os.environ.get('MCITY_ROBOT_ID', 1)
+#proxy_id = os.environ.get('MCITY_ROBOT_ID', 1)
 channel = "robot_proxy"
 room = "robot"
 
 namespace = "/octane"
 connected = False
-sent = False
 
 # If no API Key provided, exit.
 if not api_key:
@@ -78,57 +78,6 @@ def on_auth_ok(data):
 def on_robot_proxy(data):
     print(data)
 
-
-def trigger_callback():
-    global sent
-    sent = True
-    print("Message sent")
-
-
-def trigger(proxy_id, meters, meters_per_second):
-    print(f"Sending trigger for ID {proxy_id} to {server}")
-    sio.emit(
-        channel,
-        {
-            "id": proxy_id,
-            "type": "action",
-            "action": "move_distance",
-            "cancel": False,
-            "values": {
-                "move_distance_goal": {
-                    "meters_per_second": meters_per_second,
-                    "meters": meters
-                }
-            }
-        },
-        namespace=namespace,
-        callback=trigger_callback
-    )
-
-def cancel(proxy_id):
-    sio.emit(
-        channel,
-        {
-            "id": proxy_id,
-            "type": "action",
-            "cancel": True,
-        },
-        namespace=namespace,
-        callback=sent
-    )
-
-def estop(proxy_id):
-    sio.emit(
-        channel,
-        {
-            "id": proxy_id,
-            "type": "estop"
-        },
-        namespace=namespace,
-        callback=sent
-    )
-
-
 if __name__ == '__main__':
     # Make connection.
     sio.connect(server, namespaces=[namespace])
@@ -137,13 +86,7 @@ if __name__ == '__main__':
     while not connected:
         time.sleep(0.02)
 
-    # Send request. Ideally this is incorporated into a running interpreter, so the connection above is already
-    # available before calling this function, for lowest latency
-    trigger(proxy_id, meters, meters_per_second)
-
-    # Wait until the message has been sent
-    while not sent:
-        time.sleep(0.02)
+    print("Connected!")
 
     sio.wait()
 
