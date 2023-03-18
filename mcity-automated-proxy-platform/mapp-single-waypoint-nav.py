@@ -1,10 +1,9 @@
-
 """
-mapp-move-and-reverse.py
+mapp-single-waypoint-nav.py
 
-Sample Mcity OS script to control a MAPP, moving first forward and then in reverse.
+Sample Mcity OS script to control a MAPP, moving to a specific (lat, long) at a specified speed.
 
-Either edit the default values below or pass in the values as command line arguments.
+Pass in the values as command line arguments or edit them below.
 """
 import os
 import sys
@@ -14,15 +13,13 @@ from mapp_common import MAPP_Client
 import signal
 
 if len(sys.argv) == 4:
-    meters = float(sys.argv[1])
-    meters_per_second = float(sys.argv[2])
-    wait_time = float(sys.argv[3])
+    lat = float(sys.argv[1])
+    long = float(sys.argv[2])
+    meters_per_second = float(sys.argv[3])
 else:
-    meters = 1.0
-    meters_per_second = 0.5
-    wait_time = 1.0
+    exit()
 
-# Load environment variables
+# Load environment variables and configure
 api_key = os.environ.get('MCITY_OCTANE_KEY', None)
 server = os.environ.get('MCITY_OCTANE_SERVER', 'wss://octane.mvillage.um.city/')
 proxy_id = os.environ.get('MCITY_ROBOT_ID', 1)
@@ -32,20 +29,13 @@ if not api_key:
     print("NO API KEY SPECIFIED. SET MCITY_OCTANE_KEY. EXITING")
     exit()
 
-def on_robot_proxy(data):
-    """
-    Override the on_robot_proxy event handler to wait for the goal result so we know when to reverse.
-    """
-    global reverse
-    if str(data.get('type', None)) == 'goal_result':
-        reverse = True
-    print(data)
-
 def signal_handler(sig, frame):
     mapp_client.disable(proxy_id)
-    sys.exit(0)
+    exit()
+
 
 if __name__ == '__main__':
+
     # Make connection.
     mapp_client = MAPP_Client(api_key, server)
     sio = socketio.Client()
@@ -65,16 +55,11 @@ if __name__ == '__main__':
 
     # Send request. Ideally this is incorporated into a running interpreter, so the connection above is already
     # available before calling this function, for lowest latency
-    mapp_client.move_distance(proxy_id, meters, meters_per_second)
+    mapp_client.single_waypoint_nav(proxy_id, lat, long, meters_per_second)
 
-    while not mapp_client.goal_completed:
-        print("Waiting for goal_completed")
-        print(mapp_client.goal_completed)
+    # Wait until the message has been sent
+    while not mapp_client.single_waypoint_nav_sent:
         time.sleep(0.02)
-
-    time.sleep(wait_time)
-
-    mapp_client.move_distance(proxy_id, -1.0 * meters, meters_per_second)
 
     sio.wait()
 
