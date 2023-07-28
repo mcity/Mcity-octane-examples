@@ -3,7 +3,7 @@
 In order to make use of these examples, ensure that you have the Python SocketIO client v4.x installed:
 
 ```
-pip install 'python-socketio<5.0.0'
+pip install 'python-socketio==5.8.0'
 ```
 
 Also, set the following environment variables:
