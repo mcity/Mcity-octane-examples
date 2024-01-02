@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+
+    <script type="text/javascript" charset="utf-8">
+        var qs = (function (a) {
+            if (a == "") return {};
+            var b = {};
+            for (var i = 0; i < a.length; ++i) {
+                var p = a[i].split('=', 2);
+                if (p.length == 1)
+                    b[p[0]] = "";
+                else
+                    b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+            }
+            return b;
+
+        })(window.location.search.substr(1).split('&'));
+        $(document).ready(function () {
+
+            console.log('started');
+            socket = io.connect("https://atrium.um.city/ros-topics", {
+                auth: {
+                    token: qs["x-api-key"]
+                },
+                transports: ['websocket']
+            });
+            socket.on('connect', function () {
+                console.log('welcome');
+            });
+            var roomName = 'behaviorstate';
+            socket.emit('join', roomName);
+            socket.on(roomName, (msg) => {
+                console.log(msg.message);
+
+                $('#log').append('<br>' + $('<div/>').text('RTK-V2 [M] : ' + JSON.stringify(msg.message)).html());
+            });
+
+            socket.on("connect_error", (err) => {
+                console.log(`connect_error due to ${err.message}`);
+            });
+
+            return false;
+
+        });
+    </script>
+    <style>
+        .DivToScroll {
+            background-color: #F5F5F5;
+            border: 3px solid #DDDDDD;
+            border-radius: 4px 0 4px 0;
+            color: #3B3C3E;
+            font-size: 14px;
+            font-weight: bold;
+            left: -1px;
+            padding: 10px 7px 5px;
+            scroll-behavior: smooth;
+        }
+
+        .DivWithScroll {
+            height: 400px;
+
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+<body>
+<h3>RTK Events:</h3>
+<hr>
+<b>Note: </b>Please suffix <b style="color: blue;">?x-api-key=McityToken</b> to the URL and replace <b
+        style="color: blue;">McityToken</b> with your token.
+<hr>
+<div id="log" class="DivToScroll DivWithScroll"></div>
+</body>
+</html>
