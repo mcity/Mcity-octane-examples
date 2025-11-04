@@ -11,7 +11,7 @@ import time
 
 # mcity environment
 server = "wss://octane.um.city"
-api_key = "pumpk1np13"
+api_key = "my_octane_token"
 
 namespace = "/octane"
 
