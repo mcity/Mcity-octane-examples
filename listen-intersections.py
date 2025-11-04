@@ -6,12 +6,12 @@ import socketio
 import time
 
 # mvillage environment
-server = "wss://octane.mvillage.um.city"
-api_key = "reticulatingsplines"
+#server = "wss://octane.mvillage.um.city"
+#api_key = "reticulatingsplines"
 
 # mcity environment
-#server = "wss://octane.um.city"
-#api_key = "my_octane_token"
+server = "wss://octane.um.city"
+api_key = "pumpk1np13"
 
 namespace = "/octane"
 
@@ -60,10 +60,23 @@ def on_disconnect():
 
 @sio.on('v2x_SPaT', namespace=namespace)
 def on_v2x_spat(data):
-    if(data['id'] == 'beef'): # example Mcity id: 0a0c
-        #print(data)
+    print("DEBUG: on_v2x_spat")
+    #print(data['id'])
+    if(data['id'] == '0a0c'):
+        #print(data['state'])
+        print(data)
         print("\n")
-        print_spat(data)
+        #print_spat(data)
+
+@sio.on('intersection', namespace=namespace)
+def on_intersection(data):
+    print("DEBUG: on_intersection")
+    #print(data['id'])
+    if(data['id'] == '0a0c'):
+        print(data['state'])
+        print("\n")
+        #print_spat(data)
+
 
 
 def on_message(client, userdata, msg):
