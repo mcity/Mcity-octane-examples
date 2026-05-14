@@ -1,6 +1,6 @@
 # Mcity Traffic Lights — setPhase
 
-Send a traffic signal phase command to an Mcity intersection via the Octane Traffic Controller API.
+Send a traffic signal phase command to an Mcity intersection via the Octane Traffic Controller API (Mcity OS).
 
 ## Prerequisites
 
